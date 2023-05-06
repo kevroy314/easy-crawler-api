@@ -1,0 +1,51 @@
+version: '3.6'
+services:
+    crawler_redis:
+        container_name: crawler_redis
+        hostname: redis
+        image: redis:latest
+        command: --port 6379
+        ports:
+            - "6379:6379"
+        expose:
+            - "6379"
+        restart: always
+    crawler_api:
+        container_name: crawler_api
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
+        ports:
+            - "8080:8080"
+        expose:
+            - "8080"
+        working_dir: /home/crawler
+        volumes:
+            - ./:/home/crawler
+        links:
+            - crawler_redis
+        command: uvicorn api:app --host 0.0.0.0 --port 8080 --reload
+    crawler_worker:
+        container_name: crawler_worker
+        build:
+            context: ./
+            dockerfile: ./Dockerfile
+        working_dir: /home/crawler
+        volumes:
+            - ./:/home/crawler
+        links:
+            - crawler_redis
+        command: rq worker-pool --url redis://crawler_redis:6379 --num-workers 4 crawler_queue # TODO: Set the number of workers you want here
+    crawler_dashboard:
+        container_name: crawler_dashboard
+        hostname: dashboard
+        image: eoranged/rq-dashboard
+        ports:
+            - "9181:9181"
+        expose:
+            - "9181"
+        restart: always
+        environment:
+            - RQ_DASHBOARD_REDIS_URL=redis://crawler_redis:6379
+            - RQ_DASHBOARD_USERNAME=rqadmin
+            - RQ_DASHBOARD_PASSWORD=6Gy74b!T%cN3 # TODO: Change this

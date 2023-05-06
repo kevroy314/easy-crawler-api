@@ -1,0 +1,12 @@
+uvicorn
+fastapi
+pydantic
+redis
+rq
+rq_dashboard
+flask
+dash
+selenium
+requests
+bs4
+lxml
