@@ -70,7 +70,7 @@ def addTask(urls: Annotated[List[str], Query(description="A list of URLs to craw
     ids = []
     for url in urls:
         job_config['url'] = url
-        job = q.enqueue(crawl_URL, job_config, results_ttl=job_config['results_ttl'])
+        job = q.enqueue(crawl_URL, job_config, result_ttl=job_config['results_ttl'])
         ids.append(job.get_id())
     size = len(q)
     

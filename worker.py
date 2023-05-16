@@ -68,7 +68,7 @@ def crawl_URL(config: dict):
     result = {'config': config, 'page_source': DRIVER.page_source}
 
     # If there are xpath searches provided, create a soup and etree dom, then iterate through them and return the results
-    if len(config['xpaths']) > 0:
+    if config['x_paths'] is not None and len(config['x_paths']) > 0:
         logging.debug("xpath requests found, creating soup and dom tree")
         soup = BeautifulSoup(result['page_source'])
         dom = etree.HTML(str(soup))
