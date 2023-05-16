@@ -46,6 +46,6 @@ services:
             - "9181"
         restart: always
         environment:
-            - RQ_DASHBOARD_REDIS_URL=redis://crawler_redis:6379
+            - RQ_DASHBOARD_REDIS_URL=redis://crawler_redis:6379/0
             - RQ_DASHBOARD_USERNAME=rqadmin
             - RQ_DASHBOARD_PASSWORD=6Gy74b!T%cN3 # TODO: Change this

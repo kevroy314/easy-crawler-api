@@ -1,11 +1,11 @@
 import time
 import os
+import datetime
 
 from selenium import webdriver
 from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from selenium.webdriver.firefox.options import Options
 
-from bs4 import BeautifulSoup
 from lxml import etree
 
 import logging
@@ -41,37 +41,45 @@ FF_OPT = {
     'options': FIREFOX_OPTS,
     'service_log_path': GECKODRIVER_LOG
 }
-DRIVER = webdriver.Firefox(**FF_OPT)
 
-DRIVER.set_page_load_timeout(os.environ['MAX_PAGE_LOAD_TIMEOUT'])
+def get_driver():
+    driver = webdriver.Firefox(**FF_OPT)
+    driver.set_page_load_timeout(os.environ['MAX_PAGE_LOAD_TIMEOUT'])
+    return driver
 
 logging.debug(f"Driver finished setting up with FF_OPT={FF_OPT} and page load timeout of {os.environ['MAX_PAGE_LOAD_TIMEOUT']}")
 
 def _extract_xpath(dom, xpath):
-    xpath = dom.xpath(xpath)
+    return [etree.tostring(x) if not isinstance(x, str) else x for x in dom.xpath(xpath)]
 
 def crawl_URL(config: dict):
-    logging.debug(f'Starting crawl of {config}')
-    # Load either the simplified or regular page
-    if config['simplify_source']:
-        logging.debug('Running simplified view')
-        DRIVER.get(f'about:reader?url={config["url"]}')
-    else:
-        logging.debug('Running full view')
-        DRIVER.get(config['url'])
-    # Wait extra time if user requests
-    logging.debug("Sleeping for user specified time")
-    time.sleep(config['load_wait_time'])
+    start_time = datetime.datetime.now()
+    with get_driver() as driver:
+        # config = json.loads(configJSON)
+        # print(config)
+        logging.debug(f'Starting crawl of {config}')
+        # Load either the simplified or regular page
+        if config['simplify_source']:
+            logging.debug('Running simplified view')
+            driver.get(f'about:reader?url={config["url"]}')
+        else:
+            logging.debug('Running full view')
+            driver.get(config['url'])
+        # Wait extra time if user requests
+        logging.debug("Sleeping for user specified time")
+        time.sleep(config['load_wait_time'])
 
-    # Create the preliminary results
-    logging.debug("Creating preliminary results")
-    result = {'config': config, 'page_source': DRIVER.page_source}
+        # Create the preliminary results
+        logging.debug("Creating preliminary results")
+        result = {'config': config, 'page_source': driver.page_source}
+
+        driver.close()
 
     # If there are xpath searches provided, create a soup and etree dom, then iterate through them and return the results
-    if config['x_paths'] is not None and len(config['x_paths']) > 0:
+    if config['xpaths'] is not None and len(config['xpaths']) > 0:
         logging.debug("xpath requests found, creating soup and dom tree")
-        soup = BeautifulSoup(result['page_source'])
-        dom = etree.HTML(str(soup))
+        # soup = BeautifulSoup(result['page_source'])
+        dom = etree.HTML(result['page_source'])
         logging.debug("Iterating through xpath requests")
         xpath_results = [_extract_xpath(dom, xpath) for xpath in config['xpaths']]
         result['xpath_results'] = xpath_results
@@ -79,5 +87,11 @@ def crawl_URL(config: dict):
     # logging.debug("Attempting chatgpt prompt")
     # TODO: ChatGPT Integration
 
+    if not config['return_source']:
+        del result['page_source']
+
+    end_time = datetime.datetime.now()
+    result['start_time'] = start_time
+    result['end_time'] = end_time
     logging.info(f"Done crawling {config}, returning results")
     return result
