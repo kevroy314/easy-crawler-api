@@ -1,3 +1,4 @@
  - [] Add chatgpt integration
- - [] Add programmatic call example
  - [] Fix requirements.txt versions
+ - [] Add google sheets integration for data upload to dashboard
+ - [] Add back in cron scheduling
